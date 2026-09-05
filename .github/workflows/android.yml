@@ -1,4 +1,4 @@
-name: Android CI
+name: Android CI - APK Build
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -35,22 +35,30 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew build --stacktrace
-
-      - name: Build APK (Release)
-        run: ./gradlew assembleRelease --stacktrace
+      - name: Build Project
+        run: ./gradlew build --stacktrace --no-daemon
 
       - name: Build APK (Debug)
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Upload APK artifacts
+      - name: Build APK (Release)
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-apks
-          path: |
-            **/build/outputs/apk/**/**.apk
+          name: debug-apk
+          path: '**/build/outputs/apk/debug/*.apk'
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-apk
+          path: '**/build/outputs/apk/release/*.apk'
           retention-days: 30
           if-no-files-found: warn
 
@@ -59,16 +67,6 @@ jobs:
         if: always()
         with:
           name: build-reports
-          path: |
-            **/build/reports/**
+          path: '**/build/reports/**'
           retention-days: 7
-          - name: Verify Gradle Wrapper
-        run: |
-          ls -lh gradle/wrapper/gradle-wrapper.jar
-          file gradle/wrapper/gradle-wrapper.jar
-
-      - name: Grant execute permission
-        run: chmod +x gradlew
-
-      - name: Build
-        run: ./gradlew build --stacktrace --no-daemon
+          if-no-files-found: warn
